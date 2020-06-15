@@ -479,6 +479,20 @@ RCT_EXPORT_METHOD(getTotalDiskCapacity:(RCTPromiseResolveBlock)resolve rejecter:
 - (double) getFreeDiskStorage {
     uint64_t freeSpace = 0;
     NSDictionary *storage = [self getStorageDictionary];
+    
+    if (@available(iOS 11, *)) {
+        NSURL *fileURL = [[NSURL alloc] initFileURLWithPath: NSHomeDirectory()];
+        NSError *error = nil;
+        NSDictionary *results = [fileURL resourceValuesForKeys:@[NSURLVolumeAvailableCapacityForImportantUsageKey] error:&error];
+        if (results) {
+            NSLog(@"Available capacity for important usage: %@", results[NSURLVolumeAvailableCapacityForImportantUsageKey]);
+            NSNumber *freeFileSystemSizeInBytes = results[NSURLVolumeAvailableCapacityForImportantUsageKey];
+            freeSpace = [freeFileSystemSizeInBytes unsignedLongLongValue];
+        } else {
+            NSLog(@"Error retrieving resource keys: %@\n%@", [error localizedDescription], [error userInfo]);
+        }
+        return (double) freeSpace;
+    }
 
     if (storage) {
         NSNumber *freeFileSystemSizeInBytes = [storage objectForKey: NSFileSystemFreeSize];
